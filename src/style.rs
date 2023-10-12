@@ -93,7 +93,7 @@ impl BasedOn for bool {
 /// # Examples
 ///
 /// ```
-/// use nu_ansi_term::{Style, Color};
+/// use procr_ansi_term::{Style, Color};
 ///
 /// let style = Style::new().bold().background(Color::Black);
 /// println!("{}", style.paint("Bold on black"));
@@ -137,7 +137,7 @@ impl Default for Style {
     /// style returns the exact same text.
     ///
     /// ```
-    /// use nu_ansi_term::Style;
+    /// use procr_ansi_term::Style;
     /// assert_eq!(None,  Style::default().is_foreground());
     /// assert_eq!(None,  Style::default().is_background());
     /// assert_eq!(false, Style::default().is_bold());
@@ -160,7 +160,7 @@ macro_rules! format_methods {
             #[doc = r"# Examples"]
             #[doc = r""]
             #[doc = r"```"]
-            #[doc = r"use nu_ansi_term::Style;"]
+            #[doc = r"use procr_ansi_term::Style;"]
             #[doc = r""]
             #[doc = r"let style = Style::new()." [< $flag:lower >] r"();"]
             #[doc = r#"println!("{}", style.paint("hey"));"# ]
@@ -190,8 +190,8 @@ macro_rules! style_color_methods {
             #[doc = r"# Examples"]
             #[doc = r""]
             #[doc = r"```"]
-            #[doc = r"use nu_ansi_term::Style;"]
-            #[doc = r"use nu_ansi_term::Color;"]
+            #[doc = r"use procr_ansi_term::Style;"]
+            #[doc = r"use procr_ansi_term::Color;"]
             #[doc = r""]
             #[doc = r"let style = Style::new()." [< $ground >] r"(Color::Red);"]
             #[doc = r#"println!("{}", style.paint("hey"));"# ]
@@ -229,7 +229,7 @@ impl Style {
     /// # Examples
     ///
     /// ```
-    /// use nu_ansi_term::Style;
+    /// use procr_ansi_term::Style;
     ///
     /// let style = Style::new();
     /// println!("{}", style.paint("hi"));
@@ -285,7 +285,7 @@ impl Style {
     /// # Examples
     ///
     /// ```
-    /// use nu_ansi_term::Style;
+    /// use procr_ansi_term::Style;
     ///
     /// assert_eq!(true,  Style::default().is_empty());
     /// assert_eq!(false, Style::default().bold().is_empty());
@@ -472,7 +472,7 @@ macro_rules! color_methods {
                 #[doc = r"# Examples"]
                 #[doc = r""]
                 #[doc = r"```"]
-                #[doc = r"use nu_ansi_term::Color;"]
+                #[doc = r"use procr_ansi_term::Color;"]
                 #[doc = r""]
                 #[doc = r"let style = Color::Yellow." $flag:lower r"();"]
                 #[doc = r#"println!("{}", style.paint("hi"));"# ]
@@ -491,7 +491,7 @@ impl Color {
     /// # Examples
     ///
     /// ```
-    /// use nu_ansi_term::Color;
+    /// use procr_ansi_term::Color;
     ///
     /// let style = Color::Rgb(31, 31, 31).as_foreground();
     /// println!("{}", style.paint("eyyyy"));
@@ -505,7 +505,7 @@ impl Color {
     /// # Examples
     ///
     /// ```
-    /// use nu_ansi_term::Color;
+    /// use procr_ansi_term::Color;
     ///
     /// let style = Color::White.as_background().foreground(Color::Rgb(31, 31, 31));
     /// println!("{}", style.paint("eyyyy"));
@@ -520,7 +520,7 @@ impl Color {
     /// # Examples
     ///
     /// ```
-    /// use nu_ansi_term::Color;
+    /// use procr_ansi_term::Color;
     ///
     /// let style = Color::Rgb(31, 31, 31).on_background(Color::White);
     /// println!("{}", style.paint("eyyyy"));
@@ -552,7 +552,7 @@ impl From<Color> for Style {
     /// with the `From` trait.
     ///
     /// ```
-    /// use nu_ansi_term::{Style, Color};
+    /// use procr_ansi_term::{Style, Color};
     /// let green_foreground = Style::default().foreground(Color::Green);
     /// assert_eq!(green_foreground, Color::Green.as_foreground());
     /// assert_eq!(green_foreground, Color::Green.into());

@@ -240,7 +240,7 @@ impl Style {
     /// ```
     /// # #[cfg(not(feature = "gnu_legacy"))]
     /// # {
-    /// use nu_ansi_term::{Style, Color::Blue};
+    /// use procr_ansi_term::{Style, Color::Blue};
     ///
     /// let style = Style::default().bold();
     /// assert_eq!("\x1b[1m",
@@ -262,7 +262,7 @@ impl Style {
     /// ```
     /// # #[cfg(feature = "gnu_legacy")]
     /// # {
-    /// use nu_ansi_term::{Style, Color::Blue};
+    /// use procr_ansi_term::{Style, Color::Blue};
     ///
     /// let style = Style::default().bold();
     /// assert_eq!("\x1b[01m",
@@ -285,7 +285,7 @@ impl Style {
     /// ```
     /// # #[cfg(not(feature = "gnu_legacy"))]
     /// # {
-    /// use nu_ansi_term::{Style, Color::Green};
+    /// use procr_ansi_term::{Style, Color::Green};
     ///
     /// let style = Style::default().bold();
     /// assert_eq!("\x1b[32m",
@@ -305,7 +305,7 @@ impl Style {
     /// ```
     /// # #[cfg(feature = "gnu_legacy")]
     /// # {
-    /// use nu_ansi_term::Color::Green;
+    /// use procr_ansi_term::Color::Green;
     ///
     /// let style = Green.as_foreground();
     /// assert_eq!("\x1b[01m",
@@ -322,7 +322,7 @@ impl Style {
     /// # Examples
     ///
     /// ```
-    /// use nu_ansi_term::{Style, Color::Green};
+    /// use procr_ansi_term::{Style, Color::Green};
     ///
     /// let style = Style::default().bold();
     /// assert_eq!("\x1b[0m",
@@ -350,7 +350,7 @@ impl Color {
     /// # Examples
     ///
     /// ```
-    /// use nu_ansi_term::Color::Green;
+    /// use procr_ansi_term::Color::Green;
     ///
     /// assert_eq!("\x1b[32m",
     ///            Green.prefix().to_string());
@@ -368,7 +368,7 @@ impl Color {
     /// # Examples
     ///
     /// ```
-    /// use nu_ansi_term::Color::{Red, Yellow};
+    /// use procr_ansi_term::Color::{Red, Yellow};
     ///
     /// assert_eq!("\x1b[33m",
     ///            Red.infix(Yellow).to_string());
@@ -385,7 +385,7 @@ impl Color {
     /// # Examples
     ///
     /// ```
-    /// use nu_ansi_term::Color::Purple;
+    /// use procr_ansi_term::Color::Purple;
     ///
     /// assert_eq!("\x1b[0m",
     ///            Purple.suffix().to_string());

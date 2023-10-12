@@ -305,7 +305,7 @@ pub fn ansi_format(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
     quote! {
         {
-            use nu_ansi_term::{FmtRenderer, AnsiGenericString};
+            use procr_ansi_term::{FmtRenderer, AnsiGenericString};
             use std::fmt;
 
             #[derive(Default)]

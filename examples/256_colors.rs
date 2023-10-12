@@ -1,4 +1,4 @@
-use nu_ansi_term::Color;
+use procr_ansi_term::Color;
 
 // This example prints out the 256 colors.
 // They're arranged like this:
@@ -10,7 +10,7 @@ use nu_ansi_term::Color;
 
 fn main() {
     #[cfg(windows)]
-    nu_ansi_term::enable_ansi_support().unwrap();
+    procr_ansi_term::enable_ansi_support().unwrap();
 
     // First two lines
     for c in 0..8 {

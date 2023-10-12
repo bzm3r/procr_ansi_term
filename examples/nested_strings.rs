@@ -1,4 +1,4 @@
-use nu_ansi_term::{Color, Style};
+use procr_ansi_term::{Color, Style};
 
 fn main() {
     // However, notice that nested format_args occurrences don't quite behave as

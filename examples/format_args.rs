@@ -1,4 +1,4 @@
-use nu_ansi_term::{ansi_format, Color, Style};
+use procr_ansi_term::{ansi_format, Color, Style};
 
 fn main() {
     let yes = Color::Yellow.as_foreground().bold().paint("yes!");

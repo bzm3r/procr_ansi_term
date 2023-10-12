@@ -19,7 +19,7 @@
 //! here’s how to get some red text:
 //!
 //! ```
-//! use nu_ansi_term::Color::Red;
+//! use procr_ansi_term::Color::Red;
 //!
 //! println!("This is in red: {}", Red.paint("a red string"));
 //! ```
@@ -34,7 +34,7 @@
 //! [`AnsiString`] to a string as you would any other `Display` value:
 //!
 //! ```
-//! use nu_ansi_term::Color::Red;
+//! use procr_ansi_term::Color::Red;
 //!
 //! let red_string = Red.paint("a red string").to_string();
 //! ```
@@ -49,7 +49,7 @@
 //! property set. For example:
 //!
 //! ```
-//! use nu_ansi_term::Style;
+//! use procr_ansi_term::Style;
 //!
 //! println!("How about some {} and {}?",
 //!          Style::new().bold().paint("bold"),
@@ -61,7 +61,7 @@
 //! an empty `Style` value:
 //!
 //! ```
-//! use nu_ansi_term::Color::{Blue, Yellow};
+//! use procr_ansi_term::Color::{Blue, Yellow};
 //!
 //! println!("Demonstrating {} and {}!",
 //!          Blue.bold().paint("blue bold"),
@@ -79,8 +79,8 @@
 //! You can do this using the [`foreground`] method:
 //!
 //! ```
-//! use nu_ansi_term::Style;
-//! use nu_ansi_term::Color::{Blue, Cyan, Yellow};
+//! use procr_ansi_term::Style;
+//! use procr_ansi_term::Color::{Blue, Cyan, Yellow};
 //!
 //! println!("Yellow on blue: {}", Style::new().background(Blue).foreground(Yellow).paint("yow!"));
 //! println!("Also yellow on blue: {}", Cyan.on_background(Blue).foreground(Yellow).paint("zow!"));
@@ -95,8 +95,8 @@
 //! want to have a style with *nothing* set.
 //!
 //! ```
-//! use nu_ansi_term::Style;
-//! use nu_ansi_term::Color::Red;
+//! use procr_ansi_term::Style;
+//! use procr_ansi_term::Color::Red;
 //!
 //! println!("{}", Red.as_foreground().paint("yet another red string"));
 //! println!("{}", Style::default().paint("a completely regular string"));
@@ -110,7 +110,7 @@
 //! included wherever you would use a `Color`:
 //!
 //! ```
-//! use nu_ansi_term::Color::Fixed;
+//! use procr_ansi_term::Color::Fixed;
 //!
 //! println!("{}", Fixed(134).paint("A sort of light purple"));
 //! println!("{}", Fixed(221).on_background(Fixed(124)).paint("Mustard in the ketchup"));
@@ -125,7 +125,7 @@
 //! which takes separate `u8` arguments for red, green, and blue:
 //!
 //! ```
-//! use nu_ansi_term::Color::Rgb;
+//! use procr_ansi_term::Color::Rgb;
 //!
 //! println!("{}", Rgb(70, 130, 180).paint("Steel blue"));
 //! ```
@@ -150,8 +150,8 @@
 //! red bold text inside some red, but not bold, brackets:
 //!
 //! ```
-//! use nu_ansi_term::Color::Red;
-//! use nu_ansi_term::{AnsiString, AnsiStrings};
+//! use procr_ansi_term::Color::Red;
+//! use procr_ansi_term::{AnsiString, AnsiStrings};
 //!
 //! let some_value = format!("{:b}", 42);
 //! let strings: &[AnsiString<'static>] = &[
@@ -182,7 +182,7 @@
 //! implements [`Write`]:
 //!
 //! ```
-//! use nu_ansi_term::Color::Green;
+//! use procr_ansi_term::Color::Green;
 //!
 //! Green.paint("user data".as_bytes()).write_to(&mut std::io::stdout()).unwrap();
 //! ```
@@ -191,8 +191,8 @@
 //! [`AnsiByteString`] values with minimal escape sequences:
 //!
 //! ```
-//! use nu_ansi_term::Color::Green;
-//! use nu_ansi_term::AnsiByteStrings;
+//! use procr_ansi_term::Color::Green;
+//! use procr_ansi_term::AnsiByteStrings;
 //!
 //! AnsiByteStrings([
 //!     Green.paint("user data 1\n".as_bytes()),
@@ -229,7 +229,7 @@
 //! [`foreground`]: struct.Style.html#method.foreground
 //! [`on`]: struct.Style.html#method.on
 
-#![crate_name = "nu_ansi_term"]
+#![crate_name = "procr_ansi_term"]
 #![crate_type = "rlib"]
 #![warn(missing_copy_implementations)]
 // #![warn(missing_docs)]
@@ -274,4 +274,4 @@ mod rgb;
 pub use rgb::*;
 
 pub use procr_ansi_format::ansi_format;
-extern crate self as nu_ansi_term;
+extern crate self as procr_ansi_term;

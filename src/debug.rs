@@ -93,7 +93,7 @@ fn debug_style_to_string(
 ///
 ///
 /// ```
-///     use nu_ansi_term::Color::{Red, Blue};
+///     use procr_ansi_term::Color::{Red, Blue};
 ///     assert_eq!(
 ///         "Style { bold, italic, foreground(Red), background(Blue) }",
 ///        format!("{:#?}", Red.on_background(Blue).bold().italic())
@@ -141,7 +141,7 @@ impl Debug for Coloring {
 /// `format!("{:#?}")`.
 ///
 /// ```
-///     use nu_ansi_term::Color::{Red, Blue};
+///     use procr_ansi_term::Color::{Red, Blue};
 ///     assert_eq!("bold, italic",
 ///                format!("{:#?}", Red.on_background(Blue).bold().italic().formats));
 ///     assert_eq!("foreground(Red), background(Blue)",

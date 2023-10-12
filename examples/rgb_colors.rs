@@ -1,4 +1,4 @@
-use nu_ansi_term::{Color, Style};
+use procr_ansi_term::{Color, Style};
 
 // This example prints out a color gradient in a grid by calculating each
 // character’s red, green, and blue components, and using 24-bit color codes
@@ -9,7 +9,7 @@ const HEIGHT: i32 = 24;
 
 fn main() {
     #[cfg(windows)]
-    nu_ansi_term::enable_ansi_support().unwrap();
+    procr_ansi_term::enable_ansi_support().unwrap();
 
     for row in 0..HEIGHT {
         for col in 0..WIDTH {

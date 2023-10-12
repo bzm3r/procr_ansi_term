@@ -1,10 +1,10 @@
-# nu-ansi-term
+# procr-ansi-term
 
-> This is a copy of rust-ansi-term but with Colour change to Color and light foreground colors added (90-97) as well as light background colors added (100-107).
+> `procr_ansi_term` was a copy of `rust-ansi-term` but with Colour change to Color and light foreground colors added (90-97) as well as light background colors added (100-107). `procr-ansi-term` adds functionality which allows ANSI formatting of `format_args!`, and also allows various ANSI strings/format args to be nested in styling, with a primitive parent-child inheritance of said styling.
 
 This is a library for controlling colors and formatting, such as red bold text or blue underlined text, on ANSI terminals.
 
-## [View the Rustdoc](https://docs.rs/nu_ansi_term/)
+## [View the Rustdoc](https://docs.rs/procr_ansi_term/)
 
 ## Installation
 
@@ -12,10 +12,10 @@ This crate works with [Cargo](http://crates.io). Add the following to your `Carg
 
 ```toml
 [dependencies]
-nu-ansi-term = "0.49"
+procr-ansi-term = "0.1.0"
 
 # optional gnu-legacy mode to have two digit instead of one digit styles
-nu-ansi-term = { version="0.49", features=["gnu_legacy"] }
+procr-ansi-term = { version="0.1.0", features=["gnu_legacy"] }
 ```
 
 ## Basic usage
@@ -30,7 +30,7 @@ To format a string, call the `paint` method on a `Style` or a `Color`, passing i
 For example, here’s how to get some red text:
 
 ```rust
-use nu_ansi_term::Color::Red;
+use procr_ansi_term::Color::Red;
 
 println!("This is in red: {}", Red.paint("a red string"));
 ```
@@ -42,7 +42,7 @@ This allows strings to be printed with a minimum of `String` allocations being p
 If you _do_ want to get at the escape codes, then you can convert the `AnsiString` to a string as you would any other `Display` value:
 
 ```rust
-use nu_ansi_term::Color::Red;
+use procr_ansi_term::Color::Red;
 
 let red_string = Red.paint("a red string").to_string();
 ```
@@ -50,7 +50,7 @@ let red_string = Red.paint("a red string").to_string();
 **Note for Windows 10 users:** On Windows 10, the application must enable ANSI support first:
 
 ```rust,ignore
-let enabled = nu_ansi_term::enable_ansi_support();
+let enabled = procr_ansi_term::enable_ansi_support();
 ```
 
 ## Bold, underline, background, and other styles
@@ -61,7 +61,7 @@ Each method creates a new style that has that specific property set.
 For example:
 
 ```rust
-use nu_ansi_term::Style;
+use procr_ansi_term::Style;
 
 println!("How about some {} and {}?",
          Style::new().bold().paint("bold"),
@@ -71,7 +71,7 @@ println!("How about some {} and {}?",
 For brevity, these methods have also been implemented for `Color` values, so you can give your styles a foreground color without having to begin with an empty `Style` value:
 
 ```rust
-use nu_ansi_term::Color::{Blue, Yellow};
+use procr_ansi_term::Color::{Blue, Yellow};
 
 println!("Demonstrating {} and {}!",
          Blue.bold().paint("blue bold"),
@@ -87,8 +87,8 @@ In some cases, you may find it easier to change the foreground on an existing `S
 You can do this using the `foreground` method:
 
 ```rust
-use nu_ansi_term::Style;
-use nu_ansi_term::Color::{Blue, Cyan, Yellow};
+use procr_ansi_term::Style;
+use procr_ansi_term::Color::{Blue, Cyan, Yellow};
 
 println!("Yellow on blue: {}", Style::new().on_background(Blue).foreground(Yellow).paint("yow!"));
 println!("Also yellow on blue: {}", Cyan.on_background(Blue).foreground(Yellow).paint("zow!"));
@@ -98,8 +98,8 @@ You can turn a `Color` into a `Style` with the `normal` method.
 This will produce the exact same `AnsiString` as if you just used the `paint` method on the `Color` directly, but it’s useful in certain cases: for example, you may have a method that returns `Styles`, and need to represent both the “red bold” and “red, but not bold” styles with values of the same type. The `Style` struct also has a `Default` implementation if you want to have a style with _nothing_ set.
 
 ```rust
-use nu_ansi_term::Style;
-use nu_ansi_term::Color::Red;
+use procr_ansi_term::Style;
+use procr_ansi_term::Color::Red;
 
 Red.foreground().paint("yet another red string");
 Style::default().paint("a completely regular string");
@@ -110,7 +110,7 @@ applying a new one. To reset and apply, the `prefix_with_reset` method can
 be used on either `Color` or `Style` structs.
 
 ```rust
-use nu_ansi_term::Style;
+use procr_ansi_term::Style;
 
 println!("\x1b[33mHow about some {} \x1b[33mand {}?\x1b[0m",
          Style::new().prefix_with_reset().bold().paint("bold"),
@@ -123,7 +123,7 @@ You can access the extended range of 256 colors by using the `Color::Fixed` vari
 This can be included wherever you would use a `Color`:
 
 ```rust
-use nu_ansi_term::Color::Fixed;
+use procr_ansi_term::Color::Fixed;
 
 Fixed(134).paint("A sort of light purple");
 Fixed(221).on_background(Fixed(124)).paint("Mustard in the ketchup");
@@ -135,7 +135,7 @@ There’s nothing stopping you from using these as `Fixed` colors instead, but t
 You can also access full 24-bit color by using the `Color::RGB` variant, which takes separate `u8` arguments for red, green, and blue:
 
 ```rust
-use nu_ansi_term::Color::RGB;
+use procr_ansi_term::Color::RGB;
 
 RGB(70, 130, 180).paint("Steel blue");
 ```
@@ -151,8 +151,8 @@ The `AnsiStrings` struct takes a slice of several `AnsiString` values, and will 
 The following code snippet uses this to enclose a binary number displayed in red bold text inside some red, but not bold, brackets:
 
 ```rust
-use nu_ansi_term::Color::Red;
-use nu_ansi_term::{AnsiString, AnsiStrings};
+use procr_ansi_term::Color::Red;
+use procr_ansi_term::{AnsiString, AnsiStrings};
 
 let some_value = format!("{:b}", 42);
 let strings: &[AnsiString<'static>] = &[
@@ -177,7 +177,7 @@ This library also supports formatting `[u8]` byte strings; this supports applica
 This type does not implement `Display`, as it may not contain UTF-8, but it does provide a method `write_to` to write the result to any value that implements `Write`:
 
 ```rust
-use nu_ansi_term::Color::Green;
+use procr_ansi_term::Color::Green;
 
 Green.paint("user data".as_bytes()).write_to(&mut std::io::stdout()).unwrap();
 ```
@@ -185,8 +185,8 @@ Green.paint("user data".as_bytes()).write_to(&mut std::io::stdout()).unwrap();
 Similarly, the type `AnsiByteStrings` supports writing a list of `AnsiByteString` values with minimal escape sequences:
 
 ```rust
-use nu_ansi_term::Color::Green;
-use nu_ansi_term::AnsiByteStrings;
+use procr_ansi_term::Color::Green;
+use procr_ansi_term::AnsiByteStrings;
 
 AnsiByteStrings(&[
     Green.paint("user data 1\n".as_bytes()),

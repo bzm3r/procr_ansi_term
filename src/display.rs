@@ -70,7 +70,7 @@ where
 /// # Examples
 ///
 /// ```
-/// use nu_ansi_term::AnsiString;
+/// use procr_ansi_term::AnsiString;
 ///
 /// let plain_string = AnsiString::from("a plain string");
 /// let clone_string = plain_string.clone();
@@ -149,15 +149,15 @@ impl<'a, S: 'a + ToOwned + ?Sized> From<AnsiGenericStrings<'a, S>> for AnsiGener
 /// # Examples
 ///
 /// ```
-/// use nu_ansi_term::AnsiString;
-/// use nu_ansi_term::Color::Red;
+/// use procr_ansi_term::AnsiString;
+/// use procr_ansi_term::Color::Red;
 ///
 /// let red_string = Red.paint("a red string");
 /// println!("{}", red_string);
 /// ```
 ///
 /// ```
-/// use nu_ansi_term::AnsiString;
+/// use procr_ansi_term::AnsiString;
 ///
 /// let plain_string = AnsiString::from("a plain string");
 /// ```
@@ -208,7 +208,7 @@ impl<'a, S: 'a + ToOwned + ?Sized> AnsiGenericString<'a, S> {
     /// # Examples
     ///
     /// ```
-    /// use nu_ansi_term::AnsiGenericString;
+    /// use procr_ansi_term::AnsiGenericString;
     /// let title_string = AnsiGenericString::title("My Title");
     /// println!("{}", title_string);
     /// ```
@@ -233,7 +233,7 @@ impl<'a, S: 'a + ToOwned + ?Sized> AnsiGenericString<'a, S> {
     /// # Examples
     ///
     /// ```
-    /// use nu_ansi_term::Color::Red;
+    /// use procr_ansi_term::Color::Red;
     ///
     /// let link_string = Red.paint("a red string").hyperlink("https://www.example.com");
     /// println!("{}", link_string);
@@ -561,8 +561,8 @@ impl Style {
     /// Paints the given text with this style, returning an ANSI string.
     ///
     /// ```
-    /// use nu_ansi_term::Style;
-    /// use nu_ansi_term::Color;
+    /// use procr_ansi_term::Style;
+    /// use procr_ansi_term::Color;
     ///
     /// println!("{}", Style::new().foreground(Color::Blue).paint("nice!"));
     /// ```
@@ -593,7 +593,7 @@ impl Color {
     /// to get blue text.
     ///
     /// ```
-    /// use nu_ansi_term::Color::Blue;
+    /// use procr_ansi_term::Color::Blue;
     /// println!("{}", Blue.paint("da ba dee"));
     /// ```
     #[inline]

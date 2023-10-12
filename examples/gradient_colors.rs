@@ -1,8 +1,8 @@
-use nu_ansi_term::{build_all_gradient_text, Color, Gradient, Rgb, TargetGround};
+use procr_ansi_term::{build_all_gradient_text, Color, Gradient, Rgb, TargetGround};
 
 fn main() {
     #[cfg(windows)]
-    nu_ansi_term::enable_ansi_support().unwrap();
+    procr_ansi_term::enable_ansi_support().unwrap();
 
     let text = "lorem ipsum quia dolor sit amet, consectetur, adipisci velit";
 

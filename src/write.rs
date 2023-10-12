@@ -13,7 +13,7 @@ pub type WriteResult<E> = Result<(), E>;
 /// [`fmt::Arguments`].
 /// ```
 /// use std::fmt;
-/// use nu_ansi_term::{Color, fmt_write, write_any_fmt, AnyWrite};
+/// use procr_ansi_term::{Color, fmt_write, write_any_fmt, AnyWrite};
 ///
 /// let mut s = String::new();
 /// let mut t = String::new();
@@ -31,7 +31,7 @@ macro_rules! write_any_fmt {
 /// Takes an [`AnyWrite`] implementor and writes some [`StrLike`] content to it.
 /// ```
 /// use std::fmt;
-/// use nu_ansi_term::{fmt_write, write_any_str, AnyWrite, StrLike};
+/// use procr_ansi_term::{fmt_write, write_any_str, AnyWrite, StrLike};
 ///
 /// let mut s = String::new();
 /// let mut t = String::new();
