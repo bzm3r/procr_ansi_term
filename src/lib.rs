@@ -273,5 +273,5 @@ pub use gradient::*;
 mod rgb;
 pub use rgb::*;
 
-pub use ansi_format::ansi_format;
+pub use procr_ansi_format::ansi_format;
 extern crate self as nu_ansi_term;

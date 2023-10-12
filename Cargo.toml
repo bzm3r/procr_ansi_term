@@ -4,14 +4,15 @@ authors = [
     "Ryan Scheel (Havvy) <ryan.havvy@gmail.com>",
     "Josh Triplett <josh@joshtriplett.org>",
     "The Nushell Project Developers",
+    "Brian Merchant",
 ]
 description = "Library for ANSI terminal colors and styles (bold, underline)"
 edition = "2021"
 rust-version = "1.62.1"
-license = "MIT"
-name = "nu-ansi-term"
-version = "0.49.0"
-repository = "https://github.com/nushell/nu-ansi-term"
+license = "MIT OR Apache 2.0"
+name = "procr_ansi_term"
+version = "0.1.0"
+repository = "https://github.com/bzm3r/procr_ansi_term"
 
 [lib]
 doctest = true
@@ -25,7 +26,7 @@ bitflags = "2.4.0"
 itertools = "0.11.0"
 paste = "1.0.14"
 serde = { version="1.0.152", features=["derive"], optional=true }
-ansi_format = { path = "./ansi_format/" }
+procr_ansi_format = { version = "0.1.0", path = "./procr_ansi_format" }
 
 [target.'cfg(windows)'.dependencies.windows]
 version = "0.48.0"

@@ -1,7 +1,12 @@
 [package]
-name = "ansi_format"
-version = "0.1.0"
+authors = [ "Brian Merchant", ]
+description = "Proc macro for format_args!/format! like functionality for ANSI related generics."
 edition = "2021"
+license = "MIT OR Apache 2.0"
+name = "procr_ansi_format"
+version = "0.1.0"
+repository = "https://github.com/bzm3r/procr_ansi_term"
+
 
 [lib]
 proc-macro = true
