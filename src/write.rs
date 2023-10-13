@@ -3,7 +3,7 @@ use std::fmt;
 use std::fmt::Debug;
 use std::io;
 
-use crate::{AnsiGenericStrings, FmtRenderer, Style};
+use crate::{AnsiGenericStrings, Style};
 
 /// Helper to alias  over [`fmt::Result`], or [`io::Result`] depending on the
 /// error type used ([`fmt::Error`] or [`io::Error`]).
@@ -17,14 +17,14 @@ pub type WriteResult<E> = Result<(), E>;
 ///
 /// let mut s = String::new();
 /// let mut t = String::new();
-/// fmt_write!(&mut s).write_any_fmt(format_args!("{}", Color::Red.paint("hello world!")));
-/// write_any_fmt!(fmt_write!(&mut t), "{}", Color::Red.paint("hello world!"));
+/// fmt_write!(&mut s).write_fmt(format_args!("{}", Color::Red.paint("hello world!")));
+/// write_fmt!(fmt_write!(&mut t), "{}", Color::Red.paint("hello world!"));
 /// assert_eq!(s, t);
 /// ```
 #[macro_export]
-macro_rules! write_any_fmt {
+macro_rules! write_fmt {
     ($w:expr, $($args:tt)*) => {
-        $w.write_any_fmt(std::format_args!($($args)*))
+        $w.write_fmt(std::format_args!($($args)*))
     };
 }
 
@@ -35,12 +35,12 @@ macro_rules! write_any_fmt {
 ///
 /// let mut s = String::new();
 /// let mut t = String::new();
-/// fmt_write!(&mut s).write_any_str("hello world!");
-/// write_any_str!(fmt_write!(&mut t), "hello world!");
+/// fmt_write!(&mut s).write_str("hello world!");
+/// write_str!(fmt_write!(&mut t), "hello world!");
 /// assert_eq!(s, t);
 /// ```
 #[macro_export]
-macro_rules! write_any_str {
+macro_rules! write_str {
     ($w:expr, $($args:tt)*) => {
         $($args)*.write_str_to($w)
     };
@@ -76,21 +76,21 @@ pub trait AnyWrite {
     type Error;
 
     /// Write [`fmt::Arguments`] data (created using [`format_args!`] macro) to this writer.
-    fn write_any_fmt(&mut self, args: fmt::Arguments) -> WriteResult<Self::Error>;
+    fn write_fmt(&mut self, args: fmt::Arguments) -> WriteResult<Self::Error>;
 
     /// Write [`AnyWrite::Buf`] type data to this writer.
-    fn write_any_str(&mut self, s: &Self::Buf) -> WriteResult<Self::Error>;
+    fn write_str(&mut self, s: &Self::Buf) -> WriteResult<Self::Error>;
 }
 
 impl<'a> AnyWrite for dyn fmt::Write + 'a {
     type Buf = str;
     type Error = fmt::Error;
 
-    fn write_any_fmt(&mut self, args: fmt::Arguments) -> WriteResult<Self::Error> {
+    fn write_fmt(&mut self, args: fmt::Arguments) -> WriteResult<Self::Error> {
         fmt::Write::write_fmt(self, args)
     }
 
-    fn write_any_str(&mut self, s: &Self::Buf) -> WriteResult<Self::Error> {
+    fn write_str(&mut self, s: &Self::Buf) -> WriteResult<Self::Error> {
         fmt::Write::write_str(self, s)
     }
 }
@@ -99,11 +99,11 @@ impl<'a> AnyWrite for dyn io::Write + 'a {
     type Buf = [u8];
     type Error = io::Error;
 
-    fn write_any_fmt(&mut self, args: fmt::Arguments) -> WriteResult<Self::Error> {
+    fn write_fmt(&mut self, args: fmt::Arguments) -> WriteResult<Self::Error> {
         io::Write::write_fmt(self, args)
     }
 
-    fn write_any_str(&mut self, s: &Self::Buf) -> WriteResult<Self::Error> {
+    fn write_str(&mut self, s: &Self::Buf) -> WriteResult<Self::Error> {
         io::Write::write_all(self, s)
     }
 }
@@ -120,7 +120,7 @@ where
 
 impl<'a, W: AnyWrite + ?Sized, S: 'a + ?Sized + ToOwned + AsRef<W::Buf>> StrLike<'a, W> for S {
     fn write_str_to(&self, w: &mut W) -> WriteResult<W::Error> {
-        w.write_any_str(self.as_ref())
+        w.write_str(self.as_ref())
     }
 }
 
@@ -139,8 +139,6 @@ pub enum Content<'a, S: 'a + ?Sized + ToOwned> {
     /// [`AnsyGenericString`](crate::AnsiGenericString) can be converted into an
     /// [`AnsiGenericStrings`] using the appropriate [`From`] impl.
     GenericStrings(AnsiGenericStrings<'a, S>),
-    /// Content is produced by the [`ansi_format`] macro.
-    GenericFmtArg(Box<dyn FmtRenderer<'a, S>>),
 }
 
 impl<'a, S: 'a + ?Sized + ToOwned> Content<'a, S> {
@@ -151,10 +149,6 @@ impl<'a, S: 'a + ?Sized + ToOwned> Content<'a, S> {
             x @ Content::FmtArgs(_) => Self::GenericStrings(context.paint(x).into()),
             x @ Content::StrLike(_) => Self::GenericStrings(context.paint(x).into()),
             Content::GenericStrings(x) => Self::GenericStrings(x.rebase_on(context)),
-            Content::GenericFmtArg(mut x) => {
-                x.rebase_on(context);
-                Self::GenericFmtArg(x)
-            }
         }
     }
 }
@@ -176,11 +170,6 @@ where
                 x.write_to_any(fmt_write!(&mut s)).unwrap();
                 s
             }
-            Content::GenericFmtArg(x) => {
-                let mut s = String::new();
-                write_any_fmt!(fmt_write!(&mut s), "{}", x.render()).unwrap();
-                s
-            }
         }
     }
 }
@@ -191,7 +180,6 @@ impl<'a, S: 'a + ?Sized + ToOwned> Clone for Content<'a, S> {
             Self::FmtArgs(x) => Self::FmtArgs(*x),
             Self::StrLike(x) => Self::StrLike(x.clone()),
             Self::GenericStrings(x) => Self::GenericStrings(x.clone()),
-            Self::GenericFmtArg(x) => Self::GenericFmtArg(x.clone_renderer()),
         }
     }
 }
@@ -205,7 +193,6 @@ where
             Self::FmtArgs(x) => f.debug_tuple("FmtArgs").field(x).finish(),
             Self::StrLike(x) => f.debug_tuple("StrLike").field(&x.as_ref()).finish(),
             Self::GenericStrings(x) => f.debug_tuple("Ansi").field(&x).finish(),
-            Self::GenericFmtArg(x) => x.fmt(f),
         }
     }
 }
@@ -221,10 +208,9 @@ impl<'a, S: 'a + ?Sized + ToOwned> Content<'a, S> {
         str: AsRef<T>,
     {
         match self {
-            Content::FmtArgs(args) => w.write_any_fmt(*args),
+            Content::FmtArgs(args) => w.write_fmt(*args),
             Content::StrLike(s) => <S as StrLike<'a, W>>::write_str_to(s, w),
             Content::GenericStrings(x) => x.write_to_any(w),
-            Content::GenericFmtArg(x) => w.write_any_str(x.render().as_str().as_ref()),
         }
     }
 }
@@ -247,12 +233,6 @@ impl<'a, S: 'a + ?Sized + ToOwned> From<fmt::Arguments<'a>> for Content<'a, S> {
 impl<'a, S: 'a + ?Sized + ToOwned> From<AnsiGenericStrings<'a, S>> for Content<'a, S> {
     fn from(strings: AnsiGenericStrings<'a, S>) -> Self {
         Content::GenericStrings(strings)
-    }
-}
-
-impl<'a, S: 'a + ?Sized + ToOwned> From<Box<dyn FmtRenderer<'a, S>>> for Content<'a, S> {
-    fn from(renderer: Box<dyn FmtRenderer<'a, S>>) -> Self {
-        Content::GenericFmtArg(renderer)
     }
 }
 

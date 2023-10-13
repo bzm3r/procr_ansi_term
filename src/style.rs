@@ -27,28 +27,26 @@ bitflags! {
 
 impl FormatFlags {
     #[inline]
-    pub fn set_flags(mut self, flags: FormatFlags) -> Self {
-        self.insert(flags);
-        self
+    pub const fn set_flags(self, flags: FormatFlags) -> Self {
+        self.union(flags)
     }
 
     #[inline]
-    pub fn unset_flags(mut self, flags: FormatFlags) -> Self {
-        self &= !flags;
-        self
+    pub fn unset_flags(self, flags: FormatFlags) -> Self {
+        self.intersection(flags.complement())
     }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Default)]
 pub struct Coloring {
-    pub foreground: Option<Color>,
-    pub background: Option<Color>,
+    pub fg: Option<Color>,
+    pub bg: Option<Color>,
 }
 
 impl Coloring {
     /// Check if there are no colors set.
     pub const fn is_empty(&self) -> bool {
-        self.foreground.is_none() && self.background.is_none()
+        self.fg.is_none() && self.bg.is_none()
     }
 }
 
@@ -69,8 +67,8 @@ impl BasedOn for Option<Color> {
 impl BasedOn for Coloring {
     fn rebase_on(self, base: Self) -> Self {
         Self {
-            foreground: self.foreground.rebase_on(base.foreground),
-            background: self.background.rebase_on(base.background),
+            fg: self.fg.rebase_on(base.fg),
+            bg: self.bg.rebase_on(base.bg),
         }
     }
 }
@@ -95,7 +93,7 @@ impl BasedOn for bool {
 /// ```
 /// use procr_ansi_term::{Style, Color};
 ///
-/// let style = Style::new().bold().background(Color::Black);
+/// let style = Style::new().bold().bg(Color::Black);
 /// println!("{}", style.paint("Bold on black"));
 /// ```
 #[derive(Clone, Copy)]
@@ -105,7 +103,7 @@ impl BasedOn for bool {
 )]
 pub struct Style {
     /// Whether this style will be prefixed with [`RESET`](crate::ansi::RESET).
-    pub prefix_with_reset: bool,
+    pub prefix_before_reset: bool,
     /// Flags representing whether particular formatting properties are set or not.
     pub formats: FormatFlags,
     /// Data regarding the foreground/background color applied by this style.
@@ -115,7 +113,7 @@ pub struct Style {
 impl BasedOn for Style {
     fn rebase_on(self, base: Self) -> Self {
         Style {
-            prefix_with_reset: self.prefix_with_reset.rebase_on(base.prefix_with_reset),
+            prefix_before_reset: self.prefix_before_reset.rebase_on(base.prefix_before_reset),
             formats: self.formats.rebase_on(base.formats),
             coloring: self.coloring.rebase_on(base.coloring),
         }
@@ -125,8 +123,8 @@ impl BasedOn for Style {
 impl PartialEq for Style {
     fn eq(&self, other: &Self) -> bool {
         self.formats.symmetric_difference(other.formats).is_empty()
-            && self.is_foreground() == other.is_foreground()
-            && self.is_background() == other.is_background()
+            && self.is_fg() == other.is_fg()
+            && self.is_bg() == other.is_bg()
     }
 }
 
@@ -145,7 +143,7 @@ impl Default for Style {
     /// ```
     fn default() -> Self {
         Style {
-            prefix_with_reset: false,
+            prefix_before_reset: false,
             formats: FormatFlags::empty(),
             coloring: Coloring::default(),
         }
@@ -165,7 +163,7 @@ macro_rules! format_methods {
             #[doc = r"let style = Style::new()." [< $flag:lower >] r"();"]
             #[doc = r#"println!("{}", style.paint("hey"));"# ]
             #[doc = r"```"]
-            pub fn [< $flag:lower >](&self) -> Style {
+            pub const fn [< $flag:lower >](&self) -> Style {
                 (*self).insert_formats(FormatFlags::$flag)
             }
 
@@ -175,7 +173,7 @@ macro_rules! format_methods {
             }
 
             #[doc = r"Returns a copy of this style with the [`FormatFlags::`" $flag r"`] property unset."]
-            pub fn [< without_ $flag:lower >](&self) -> Style {
+            pub const fn [< without_ $flag:lower >](&self) -> Style {
                 (*self).remove_formats(FormatFlags::$flag)
             }
         }
@@ -197,15 +195,15 @@ macro_rules! style_color_methods {
             #[doc = r#"println!("{}", style.paint("hey"));"# ]
             #[doc = r"```"]
             #[inline]
-            pub fn [< set_ $ground >](mut self, color: Option<Color>) -> Self {
+            pub const fn [< set_ $ground >](mut self, color: Option<Color>) -> Self {
                 self.coloring.[< $ground >] = color;
                 self
             }
 
             #[doc = r"Set the " $ground " color of the style."]
             #[inline]
-            pub fn [< $ground >](self, color: Color) -> Self {
-                self.[< set_ $ground >](color.into())
+            pub const fn [< $ground >](self, color: Color) -> Self {
+                self.[< set_ $ground >](Some(color))
             }
 
             #[doc = r"Gets the corresponding " $ground " color if it exists."]
@@ -234,35 +232,43 @@ impl Style {
     /// let style = Style::new();
     /// println!("{}", style.paint("hi"));
     /// ```
-    pub fn new() -> Style {
-        Style::default()
+    pub const fn new() -> Style {
+        Style {
+            prefix_before_reset: false,
+            formats: FormatFlags::empty(),
+            coloring: Coloring { fg: None, bg: None },
+        }
     }
 
     /// Insert (turn on) style properties in this style that are true in given `formats`.
-    pub fn insert_formats(mut self, formats: FormatFlags) -> Self {
-        self.formats.insert(formats);
-        self
+    pub const fn insert_formats(self, formats: FormatFlags) -> Self {
+        Self {
+            prefix_before_reset: self.prefix_before_reset,
+            formats: self.formats.union(formats),
+            coloring: self.coloring,
+        }
     }
 
     /// Remove (turn off) the format properties specified by `formats`.
-    pub fn remove_formats(mut self, formats: FormatFlags) -> Self {
-        // We use &! instead of the `remove` operator on `flags`, because !
-        // truncates any unknown bits.
-        self.formats &= !formats;
-        self
+    pub const fn remove_formats(self, formats: FormatFlags) -> Self {
+        Self {
+            prefix_before_reset: self.prefix_before_reset,
+            formats: self.formats.intersection(formats.complement()),
+            coloring: self.coloring,
+        }
     }
 
     /// Create a copy of this style, and insert into it any formats
     /// that are true in `flags`.
     #[inline]
-    pub fn with_flags(&self, flags: FormatFlags) -> Style {
+    pub const fn with_flags(&self, flags: FormatFlags) -> Style {
         (*self).insert_formats(flags)
     }
 
     /// Create a copy of this style, and remove from it any formats that are
     /// true in `flags`.
     #[inline]
-    pub fn without_flags(&self, flags: FormatFlags) -> Style {
+    pub const fn without_flags(&self, flags: FormatFlags) -> Style {
         (*self).remove_formats(flags)
     }
 
@@ -277,8 +283,8 @@ impl Style {
         STRIKETHROUGH
     );
 
-    style_color_methods!(foreground);
-    style_color_methods!(background);
+    style_color_methods!(fg);
+    style_color_methods!(bg);
 
     /// Return true if this `Style` requires no escape codes to be represented.
     ///
@@ -292,75 +298,82 @@ impl Style {
     /// ```
     #[inline]
     pub const fn is_empty(&self) -> bool {
-        self.formats.is_empty() && self.coloring.is_empty() && !self.prefix_with_reset
+        self.formats.is_empty() && self.coloring.is_empty() && !self.prefix_before_reset
     }
 
-    /// Check if style has no formatting or coloring (it might still have `prefix_with_reset`).
+    /// Check if style has no formatting or coloring (it might still have `reset_before_style`).
     #[inline]
-    pub fn has_no_styling(&self) -> bool {
+    pub const fn has_no_styling(&self) -> bool {
         !self.has_color() && !self.has_formatting()
     }
 
     /// Check if style has any coloring.
     #[inline]
-    pub fn has_color(&self) -> bool {
-        self.coloring.foreground.is_some() || self.coloring.background.is_some()
+    pub const fn has_color(self) -> bool {
+        self.coloring.fg.is_some() || self.coloring.bg.is_some()
     }
 
     /// Get the formatting flags of this style.
     #[inline]
-    pub fn get_formats(&self) -> FormatFlags {
+    pub const fn get_formats(self) -> FormatFlags {
         self.formats
     }
 
     /// Check if the style contains some property which cannot be inverted, and
     /// thus must be followed by a reset flag in order turn off its effect.
     #[inline]
-    pub fn has_formatting(&self) -> bool {
+    pub const fn has_formatting(self) -> bool {
         !self.formats.is_empty()
     }
 
     /// Create a copy of this style with the specified `coloring`.
     pub fn coloring(self, coloring: Coloring) -> Self {
-        self.set_foreground(coloring.foreground)
-            .set_background(coloring.background)
+        self.set_fg(coloring.fg).set_bg(coloring.bg)
     }
 
     /// Create a copy of this style, with the styling properties updated using
-    pub fn update_with(self, other: Self) -> Self {
+    /// the other style.
+    pub const fn update_with(self, other: Self) -> Self {
         Self {
-            prefix_with_reset: !self.prefix_with_reset && other.prefix_with_reset,
+            prefix_before_reset: !self.prefix_before_reset && other.prefix_before_reset,
             formats: self.formats.set_flags(other.formats),
             coloring: Coloring {
-                foreground: if self.coloring.foreground.is_none() {
-                    other.coloring.foreground
+                fg: if self.coloring.fg.is_none() {
+                    other.coloring.fg
                 } else {
-                    self.coloring.foreground
+                    self.coloring.fg
                 },
-                background: if self.coloring.background.is_none() {
-                    other.coloring.background
+                bg: if self.coloring.bg.is_none() {
+                    other.coloring.bg
                 } else {
-                    self.coloring.background
+                    self.coloring.bg
                 },
             },
         }
     }
 
-    /// Return whether or not `prefix_with_reset` is set.
-    pub fn is_prefix_with_reset(&self) -> bool {
-        self.prefix_with_reset
+    /// Return whether or not `reset_before_style` is set.
+    pub const fn is_reset_before_style(&self) -> bool {
+        self.prefix_before_reset
     }
 
-    /// Set `prefix_with_reset` to be `true`.
-    pub fn prefix_with_reset(mut self) -> Self {
-        self.prefix_with_reset = true;
+    /// Set `reset_before_style` to be `true`.
+    pub const fn reset_before_style(mut self) -> Self {
+        self.prefix_before_reset = true;
         self
     }
 
-    ///Set `prefix_with_reset` to the specified value.
-    pub fn set_prefix_with_reset(mut self, value: bool) -> Self {
-        self.prefix_with_reset = value;
+    ///Set `reset_before_style` to the specified value.
+    pub const fn set_reset_before_style(mut self, value: bool) -> Self {
+        self.prefix_before_reset = value;
         self
+    }
+
+    /// Sets the background color for this style. This is a shim for backwards
+    /// compatibility, which ultimately calls [`Style::bg`](crate::style::Style::bg).
+    #[inline]
+    pub const fn on(self, color: Color) -> Self {
+        self.bg(color)
     }
 }
 
@@ -478,7 +491,7 @@ macro_rules! color_methods {
                 #[doc = r#"println!("{}", style.paint("hi"));"# ]
                 #[doc = r"```"]
                 pub fn [< $flag:lower >](self) -> Style {
-                    self.as_foreground().[< $flag:lower >]()
+                    self.normal().[< $flag:lower >]()
                 }
             )*
         }
@@ -493,11 +506,11 @@ impl Color {
     /// ```
     /// use procr_ansi_term::Color;
     ///
-    /// let style = Color::Rgb(31, 31, 31).as_foreground();
+    /// let style = Color::Rgb(31, 31, 31).normal();
     /// println!("{}", style.paint("eyyyy"));
     /// ```
-    pub fn as_foreground(self) -> Style {
-        Style::new().foreground(self)
+    pub const fn normal(self) -> Style {
+        Style::new().fg(self)
     }
 
     /// Returns a `Style` with the background set to this color.
@@ -507,11 +520,11 @@ impl Color {
     /// ```
     /// use procr_ansi_term::Color;
     ///
-    /// let style = Color::White.as_background().foreground(Color::Rgb(31, 31, 31));
+    /// let style = Color::White.bg().fg(Color::Rgb(31, 31, 31));
     /// println!("{}", style.paint("eyyyy"));
     /// ```
-    pub fn as_background(self) -> Style {
-        Style::new().background(self)
+    pub const fn bg(self) -> Style {
+        Style::new().bg(self)
     }
 
     /// Returns a `Style` with the foreground color set to this color and the
@@ -522,17 +535,17 @@ impl Color {
     /// ```
     /// use procr_ansi_term::Color;
     ///
-    /// let style = Color::Rgb(31, 31, 31).on_background(Color::White);
+    /// let style = Color::Rgb(31, 31, 31).on(Color::White);
     /// println!("{}", style.paint("eyyyy"));
     /// ```
-    pub fn on_background(self, bg: Self) -> Style {
-        Style::new().foreground(self).background(bg)
+    pub const fn on(self, bg: Self) -> Style {
+        Style::new().fg(self).bg(bg)
     }
 
     /// Returns a `Style` with the background color set to this color and the
     /// foreground color property set to the given color.
-    pub fn with_foreground(self, fg: Self) -> Style {
-        Style::new().background(self).foreground(fg)
+    pub const fn under(self, fg: Self) -> Style {
+        Style::new().bg(self).fg(fg)
     }
 
     color_methods!(
@@ -559,7 +572,7 @@ impl From<Color> for Style {
     /// assert_eq!(green_foreground, Style::from(Color::Green));
     /// ```
     fn from(color: Color) -> Style {
-        color.as_foreground()
+        color.normal()
     }
 }
 
@@ -604,6 +617,6 @@ mod serde_json_tests {
     fn style_serialization() {
         let style = Style::default();
 
-        assert_eq!(serde_json::to_string(&style).unwrap(), "{\"foreground\":null,\"background\":null,\"is_bold\":false,\"is_dimmed\":false,\"is_italic\":false,\"is_underline\":false,\"is_blink\":false,\"is_reverse\":false,\"is_hidden\":false,\"is_strikethrough\":false,\"prefix_with_reset\":false}".to_string());
+        assert_eq!(serde_json::to_string(&style).unwrap(), "{\"foreground\":null,\"background\":null,\"is_bold\":false,\"is_dimmed\":false,\"is_italic\":false,\"is_underline\":false,\"is_blink\":false,\"is_reverse\":false,\"is_hidden\":false,\"is_strikethrough\":false,\"reset_before_style\":false}".to_string());
     }
 }

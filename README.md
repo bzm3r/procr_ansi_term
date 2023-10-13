@@ -77,21 +77,21 @@ println!("Demonstrating {} and {}!",
          Blue.bold().paint("blue bold"),
          Yellow.underline().paint("yellow underline"));
 
-println!("Yellow on blue: {}", Yellow.on_background(Blue).paint("wow!"));
+println!("Yellow on blue: {}", Yellow.on(Blue).paint("wow!"));
 ```
 
 The complete list of styles you can use are:
 `bold`, `dimmed`, `italic`, `underline`, `blink`, `reverse`, `hidden`, and `on` for background colors.
 
 In some cases, you may find it easier to change the foreground on an existing `Style` rather than starting from the appropriate `Color`.
-You can do this using the `foreground` method:
+You can do this using the `fg` method:
 
 ```rust
 use procr_ansi_term::Style;
 use procr_ansi_term::Color::{Blue, Cyan, Yellow};
 
-println!("Yellow on blue: {}", Style::new().on_background(Blue).foreground(Yellow).paint("yow!"));
-println!("Also yellow on blue: {}", Cyan.on_background(Blue).foreground(Yellow).paint("zow!"));
+println!("Yellow on blue: {}", Style::new().on(Blue).fg(Yellow).paint("yow!"));
+println!("Also yellow on blue: {}", Cyan.on(Blue).fg(Yellow).paint("zow!"));
 ```
 
 You can turn a `Color` into a `Style` with the `normal` method.
@@ -101,20 +101,20 @@ This will produce the exact same `AnsiString` as if you just used the `paint` me
 use procr_ansi_term::Style;
 use procr_ansi_term::Color::Red;
 
-Red.foreground().paint("yet another red string");
+Red.normal().paint("yet another red string");
 Style::default().paint("a completely regular string");
 ```
 
 Sometimes it is desirable to hard-reset a style/color just before
-applying a new one. To reset and apply, the `prefix_with_reset` method can
+applying a new one. To reset and apply, the `reset_before_style` method can
 be used on either `Color` or `Style` structs.
 
 ```rust
 use procr_ansi_term::Style;
 
 println!("\x1b[33mHow about some {} \x1b[33mand {}?\x1b[0m",
-         Style::new().prefix_with_reset().bold().paint("bold"),
-         Style::new().prefix_with_reset().underline().paint("underline"));
+         Style::new().reset_before_style().bold().paint("bold"),
+         Style::new().reset_before_style().underline().paint("underline"));
 ```
 
 ## Extended colors
@@ -126,7 +126,7 @@ This can be included wherever you would use a `Color`:
 use procr_ansi_term::Color::Fixed;
 
 Fixed(134).paint("A sort of light purple");
-Fixed(221).on_background(Fixed(124)).paint("Mustard in the ketchup");
+Fixed(221).on(Fixed(124)).paint("Mustard in the ketchup");
 ```
 
 The first sixteen of these values are the same as the normal and bold standard color variants.
