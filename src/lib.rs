@@ -67,7 +67,7 @@
 //!          Blue.bold().paint("blue bold"),
 //!          Yellow.underline().paint("yellow underline"));
 //!
-//! println!("Yellow on blue: {}", Yellow.on(Blue).paint("wow!"));
+//! println!("Yellow on blue: {}", Yellow.on_bg(Blue).paint("wow!"));
 //! ```
 //!
 //! The complete list of styles you can use are: [`bold`], [`dimmed`], [`italic`],
@@ -82,8 +82,8 @@
 //! use procr_ansi_term::Style;
 //! use procr_ansi_term::Color::{Blue, Cyan, Yellow};
 //!
-//! println!("Yellow on blue: {}", Style::new().on(Blue).fg(Yellow).paint("yow!"));
-//! println!("Also yellow on blue: {}", Cyan.on(Blue).fg(Yellow).paint("zow!"));
+//! println!("Yellow on blue: {}", Style::new().fg(Blue).fg(Yellow).paint("yow!"));
+//! println!("Also yellow on blue: {}", Cyan.on_bg(Blue).fg(Yellow).paint("zow!"));
 //! ```
 //!
 //! You can turn a `Color` into a `Style` with the [`normal`] method.
@@ -98,7 +98,7 @@
 //! use procr_ansi_term::Style;
 //! use procr_ansi_term::Color::Red;
 //!
-//! println!("{}", Red.normal().paint("yet another red string"));
+//! println!("{}", Red.as_fg().paint("yet another red string"));
 //! println!("{}", Style::default().paint("a completely regular string"));
 //! ```
 //!
@@ -113,7 +113,7 @@
 //! use procr_ansi_term::Color::Fixed;
 //!
 //! println!("{}", Fixed(134).paint("A sort of light purple"));
-//! println!("{}", Fixed(221).on(Fixed(124)).paint("Mustard in the ketchup"));
+//! println!("{}", Fixed(221).on_bg(Fixed(124)).paint("Mustard in the ketchup"));
 //! ```
 //!
 //! The first sixteen of these values are the same as the normal and bold

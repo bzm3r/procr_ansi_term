@@ -19,7 +19,7 @@ pub enum StyleDelta {
 #[derive(Clone, Copy, Debug)]
 pub struct BoolStyle {
     /// Whether this style will be prefixed with [`RESET`](crate::ansi::RESET).
-    pub reset_before_style: bool,
+    pub reset_prefix: bool,
     /// Flags representing whether particular formatting properties are set or not.
     pub formats: FormatFlags,
     /// Data regarding the foreground/background color applied by this style.
@@ -107,7 +107,7 @@ impl Difference for FormatFlags {
 impl Difference for BoolStyle {
     fn not(self) -> Self {
         Self {
-            reset_before_style: self.reset_before_style.not(),
+            reset_prefix: self.reset_prefix.not(),
             formats: self.formats.complement(),
             coloring: self.coloring.not(),
         }
@@ -115,9 +115,7 @@ impl Difference for BoolStyle {
 
     fn conjunction(self, other: Self) -> Self {
         Self {
-            reset_before_style: self
-                .reset_before_style
-                .conjunction(other.reset_before_style),
+            reset_prefix: self.reset_prefix.conjunction(other.reset_prefix),
             formats: self.formats.conjunction(other.formats),
             coloring: self.coloring.conjunction(other.coloring),
         }
@@ -127,12 +125,12 @@ impl Difference for BoolStyle {
 impl From<Style> for BoolStyle {
     fn from(style: Style) -> Self {
         let Style {
-            prefix_before_reset: reset_before_style,
+            reset_prefix,
             formats,
             coloring,
         } = style;
         Self {
-            reset_before_style,
+            reset_prefix,
             formats,
             coloring: coloring.into(),
         }
@@ -149,11 +147,11 @@ impl Style {
         if self == next {
             // If self is the same as next, no changes are required.
             StyleDelta::Empty
-        } else if (next.is_empty() && !self.is_empty()) || next.is_reset_before_style() {
+        } else if (next.is_empty() && !self.is_empty()) || next.is_reset_prefix() {
             // If either the next style is empty, and this is not, OR if the
             // next style requires/explicitly requests a reset before style,
             // emit the next style with a reset.
-            StyleDelta::ExtraStyles(next.reset_before_style())
+            StyleDelta::ExtraStyles(next.reset_prefix())
         } else {
             // No colors or formatting options were turned off. But there might
             // have been things turned on, or colors that have changed. This
@@ -171,7 +169,7 @@ impl Style {
                 StyleDelta::ExtraStyles(r)
             } else {
                 // If colors were turned off, we need to reset.
-                StyleDelta::ExtraStyles(next.reset_before_style())
+                StyleDelta::ExtraStyles(next.reset_prefix())
             }
         }
     }
@@ -212,12 +210,12 @@ mod test {
         };
     }
 
-    test!(nothing:    Green.normal(); Green.normal()  => Empty);
-    test!(bold:  Green.normal(); Green.bold()    => ExtraStyles(style().bold()));
-    test!(unbold:  Green.bold();   Green.normal()  => ExtraStyles(style().fg(Green).reset_before_style()));
+    test!(nothing:    Green.as_fg(); Green.as_fg()  => Empty);
+    test!(bold:  Green.as_fg(); Green.bold()    => ExtraStyles(style().bold()));
+    test!(unbold:  Green.bold();   Green.as_fg()  => ExtraStyles(style().fg(Green).reset_prefix()));
     test!(nothing2:   Green.bold();   Green.bold()    => Empty);
 
-    test!(color_change: Red.normal(); Blue.normal() => ExtraStyles(style().fg(Blue)));
+    test!(color_change: Red.as_fg(); Blue.as_fg() => ExtraStyles(style().fg(Blue)));
 
     test!(addition_of_blink:          style(); style().blink()          => ExtraStyles(style().blink()));
     test!(addition_of_dimmed:         style(); style().dimmed()         => ExtraStyles(style().dimmed()));
@@ -225,9 +223,9 @@ mod test {
     test!(addition_of_reverse:        style(); style().reverse()        => ExtraStyles(style().reverse()));
     test!(addition_of_strikethrough:  style(); style().strikethrough()  => ExtraStyles(style().strikethrough()));
 
-    test!(removal_of_strikethrough:   style().strikethrough(); style()  => ExtraStyles(style().reset_before_style()));
-    test!(removal_of_reverse:         style().reverse();       style()  => ExtraStyles(style().reset_before_style()));
-    test!(removal_of_hidden:          style().hidden();        style()  => ExtraStyles(style().reset_before_style()));
-    test!(removal_of_dimmed:          style().dimmed();        style()  => ExtraStyles(style().reset_before_style()));
-    test!(removal_of_blink:           style().blink();         style()  => ExtraStyles(style().reset_before_style()));
+    test!(removal_of_strikethrough:   style().strikethrough(); style()  => ExtraStyles(style().reset_prefix()));
+    test!(removal_of_reverse:         style().reverse();       style()  => ExtraStyles(style().reset_prefix()));
+    test!(removal_of_hidden:          style().hidden();        style()  => ExtraStyles(style().reset_prefix()));
+    test!(removal_of_dimmed:          style().dimmed();        style()  => ExtraStyles(style().reset_prefix()));
+    test!(removal_of_blink:           style().blink();         style()  => ExtraStyles(style().reset_prefix()));
 }

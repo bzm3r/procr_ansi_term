@@ -17,14 +17,11 @@ fn main() {
     println!("{} {}", Purple.paint("Purple"), Purple.bold().paint("bold"));
     println!("{} {}", Cyan.paint("Cyan"), Cyan.bold().paint("bold"));
     println!("{} {}", White.paint("White"), White.bold().paint("bold"));
-    println!("\nreset_before_style at work:");
+    println!("\nreset_prefix at work:");
     println!(
         "\x1b[33mReset {} \x1b[33mand {}\x1b[0m",
-        Style::new().reset_before_style().bold().paint("bold"),
-        Style::new()
-            .reset_before_style()
-            .underline()
-            .paint("underline")
+        Style::new().reset_prefix().bold().paint("bold"),
+        Style::new().reset_prefix().underline().paint("underline")
     );
     println!(
         "\x1b[33mDo not reset {} \x1b[33mand {}\x1b[0m",

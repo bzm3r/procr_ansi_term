@@ -236,7 +236,7 @@ impl<'a, S: 'a + ToOwned + ?Sized> AnsiGenericString<'a, S> {
     /// # Examples
     ///
     /// ```
-    /// use nu_ansi_term::AnsiGenericString;
+    /// use procr_ansi_term::AnsiGenericString;
     /// let title_string = AnsiGenericString::title("My Title");
     /// println!("{}", title_string);
     /// ```
@@ -256,7 +256,7 @@ impl<'a, S: 'a + ToOwned + ?Sized> AnsiGenericString<'a, S> {
     /// # Examples
     ///
     /// ```
-    /// use nu_ansi_term::AnsiGenericString;
+    /// use procr_ansi_term::AnsiGenericString;
     /// let title_string = AnsiGenericString::title("My Title");
     /// println!("{}", title_string);
     /// ```
@@ -299,7 +299,7 @@ impl<'a, S: 'a + ToOwned + ?Sized> AnsiGenericString<'a, S> {
     /// # Examples
     ///
     /// ```
-    /// use nu_ansi_term::Color::Red;
+    /// use procr_ansi_term::Color::Red;
     ///
     /// let link_string = Red.paint("a red string").hyperlink("https://www.example.com");
     /// println!("{}", link_string);
@@ -477,13 +477,11 @@ impl<'a, S: 'a + ToOwned + ?Sized> AnsiGenericStrings<'a, S> {
     pub fn rebase_on(self, base: Style) -> Self {
         for update in self.style_updates_mut().to_mut().iter_mut() {
             update.style_delta = match update.style_delta {
-                StyleDelta::ExtraStyles(style) => {
-                    StyleDelta::ExtraStyles(if style.prefix_before_reset {
-                        style.rebase_on(base)
-                    } else {
-                        style
-                    })
-                }
+                StyleDelta::ExtraStyles(style) => StyleDelta::ExtraStyles(if style.reset_prefix {
+                    style.rebase_on(base)
+                } else {
+                    style
+                }),
                 StyleDelta::Empty => StyleDelta::Empty,
             };
         }
@@ -689,7 +687,7 @@ impl Style {
 
 impl Color {
     /// Paints the given text with this color, returning an ANSI string.
-    /// This is a short-cut so you don’t have to use `Blue.normal()` just
+    /// This is a short-cut so you don’t have to use `Blue.as_fg()` just
     /// to get blue text.
     ///
     /// ```
@@ -702,7 +700,7 @@ impl Color {
     where
         I: Into<Content<'a, S>>,
     {
-        self.normal().paint(input)
+        self.as_fg().paint(input)
     }
 }
 

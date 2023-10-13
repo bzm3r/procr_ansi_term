@@ -77,7 +77,7 @@ println!("Demonstrating {} and {}!",
          Blue.bold().paint("blue bold"),
          Yellow.underline().paint("yellow underline"));
 
-println!("Yellow on blue: {}", Yellow.on(Blue).paint("wow!"));
+println!("Yellow on blue: {}", Yellow.on_bg(Blue).paint("wow!"));
 ```
 
 The complete list of styles you can use are:
@@ -90,8 +90,8 @@ You can do this using the `fg` method:
 use procr_ansi_term::Style;
 use procr_ansi_term::Color::{Blue, Cyan, Yellow};
 
-println!("Yellow on blue: {}", Style::new().on(Blue).fg(Yellow).paint("yow!"));
-println!("Also yellow on blue: {}", Cyan.on(Blue).fg(Yellow).paint("zow!"));
+println!("Yellow on blue: {}", Style::new().on_bg(Blue).fg(Yellow).paint("yow!"));
+println!("Also yellow on blue: {}", Cyan.on_bg(Blue).fg(Yellow).paint("zow!"));
 ```
 
 You can turn a `Color` into a `Style` with the `normal` method.
@@ -101,20 +101,20 @@ This will produce the exact same `AnsiString` as if you just used the `paint` me
 use procr_ansi_term::Style;
 use procr_ansi_term::Color::Red;
 
-Red.normal().paint("yet another red string");
+Red.as_fg().paint("yet another red string");
 Style::default().paint("a completely regular string");
 ```
 
 Sometimes it is desirable to hard-reset a style/color just before
-applying a new one. To reset and apply, the `reset_before_style` method can
+applying a new one. To reset and apply, the `reset_prefix` method can
 be used on either `Color` or `Style` structs.
 
 ```rust
 use procr_ansi_term::Style;
 
 println!("\x1b[33mHow about some {} \x1b[33mand {}?\x1b[0m",
-         Style::new().reset_before_style().bold().paint("bold"),
-         Style::new().reset_before_style().underline().paint("underline"));
+         Style::new().reset_prefix().bold().paint("bold"),
+         Style::new().reset_prefix().underline().paint("underline"));
 ```
 
 ## Extended colors
@@ -126,7 +126,7 @@ This can be included wherever you would use a `Color`:
 use procr_ansi_term::Color::Fixed;
 
 Fixed(134).paint("A sort of light purple");
-Fixed(221).on(Fixed(124)).paint("Mustard in the ketchup");
+Fixed(221).on_bg(Fixed(124)).paint("Mustard in the ketchup");
 ```
 
 The first sixteen of these values are the same as the normal and bold standard color variants.

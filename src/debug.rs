@@ -96,7 +96,7 @@ fn debug_style_to_string(
 ///     use procr_ansi_term::Color::{Red, Blue};
 ///     assert_eq!(
 ///         "Style { bold, italic, foreground(Red), background(Blue) }",
-///        format!("{:#?}", Red.on(Blue).bold().italic())
+///        format!("{:#?}", Red.on_bg(Blue).bold().italic())
 ///     );
 /// ```
 impl Debug for Style {
@@ -139,9 +139,9 @@ impl Debug for Coloring {
 /// ```
 ///     use procr_ansi_term::Color::{Red, Blue};
 ///     assert_eq!("bold, italic",
-///                format!("{:#?}", Red.on(Blue).bold().italic().formats));
+///                format!("{:#?}", Red.on_bg(Blue).bold().italic().formats));
 ///     assert_eq!("foreground(Red), background(Blue)",
-///                format!("{:#?}", Red.on(Blue).bold().italic().coloring));
+///                format!("{:#?}", Red.on_bg(Blue).bold().italic().coloring));
 /// ```
 impl Debug for FormatFlags {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -279,7 +279,7 @@ pub struct FgColor(Color);
 
 impl DebugStylePaint for FgColor {
     fn into_style(self) -> Style {
-        self.0.normal()
+        self.0.as_fg()
     }
 }
 
@@ -288,13 +288,13 @@ pub struct BgColor(Color);
 
 impl DebugStylePaint for BgColor {
     fn into_style(self) -> Style {
-        self.0.bg()
+        self.0.as_bg()
     }
 }
 
 impl DebugStylePaint for Color {
     fn into_style(self) -> Style {
-        self.normal()
+        self.as_fg()
     }
 }
 
@@ -447,8 +447,8 @@ mod test {
         [bold: bold]
         [italic: italic]
         [both: bold, italic]
-        [red: Red.normal(), "Style { foreground(Red) }"]
-        [redblue: Red.on(Rgb(3, 2, 4)), "Style { foreground(Red), background(Rgb(3, 2, 4)) }"]
-        [everything: Red.on(Blue).blink().bold().dimmed().hidden().italic().reverse().strikethrough().underline(), "Style { blink, bold, dimmed, hidden, italic, reverse, strikethrough, underline, foreground(Red), background(Blue) }"]
+        [red: Red.as_fg(), "Style { foreground(Red) }"]
+        [redblue: Red.on_bg(Rgb(3, 2, 4)), "Style { foreground(Red), background(Rgb(3, 2, 4)) }"]
+        [everything: Red.on_bg(Blue).blink().bold().dimmed().hidden().italic().reverse().strikethrough().underline(), "Style { blink, bold, dimmed, hidden, italic, reverse, strikethrough, underline, foreground(Red), background(Blue) }"]
     );
 }
