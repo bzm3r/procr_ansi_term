@@ -2,8 +2,9 @@ use crate::ansi::RESET;
 use crate::difference::StyleDelta;
 use crate::style::{BasedOn, Color, Style};
 use crate::write::{AnyWrite, Content, StrLike, WriteResult};
-use crate::{fmt_write, io_write, write_any_fmt, write_any_str};
+use crate::{fmt_write, io_write, write_fmt, write_str};
 use std::borrow::Cow;
+use std::cell::{Ref, RefCell, RefMut};
 use std::fmt::{self, Debug};
 use std::io;
 
@@ -169,7 +170,11 @@ pub type AnsiByteString<'a> = AnsiGenericString<'a, [u8]>;
 
 impl<'a, S: 'a + ToOwned + ?Sized> AnsiGenericString<'a, S> {
     /// Create an [`AnsiByteString`] from the given data.
-    pub fn new(style: Style, content: Content<'a, S>, oscontrol: Option<OSControl<'a, S>>) -> Self {
+    pub const fn new(
+        style: Style,
+        content: Content<'a, S>,
+        oscontrol: Option<OSControl<'a, S>>,
+    ) -> Self {
         Self {
             style,
             content,
@@ -178,23 +183,23 @@ impl<'a, S: 'a + ToOwned + ?Sized> AnsiGenericString<'a, S> {
     }
 
     /// Directly access the style
-    pub const fn style(&self) -> &Style {
+    pub const fn style_ref(&self) -> &Style {
         &self.style
     }
 
     /// Directly access the style mutably
-    pub fn style_mut(&mut self) -> &mut Style {
+    pub fn style_ref_mut(&mut self) -> &mut Style {
         &mut self.style
     }
 
     /// Get the (text) content in this generic string.
-    pub fn content(&self) -> &Content<'a, S> {
+    pub const fn content(&self) -> &Content<'a, S> {
         &self.content
     }
 
     /// Get the [`OSControl`] settings associated with this generic string, if
     /// any exist.
-    pub fn oscontrol(&self) -> &Option<OSControl<'a, S>> {
+    pub const fn oscontrol(&self) -> &Option<OSControl<'a, S>> {
         &self.oscontrol
     }
 
@@ -213,13 +218,53 @@ impl<'a, S: 'a + ToOwned + ?Sized> AnsiGenericString<'a, S> {
     /// println!("{}", title_string);
     /// ```
     /// Should produce an empty line but set the terminal title.
-    pub fn title<I>(s: I) -> Self
+    pub fn title_content<I>(s: I) -> Self
     where
         I: Into<Content<'a, S>>,
     {
         Self {
-            style: Style::default(),
+            style: Style::new(),
             content: s.into(),
+            oscontrol: Some(OSControl::<S>::Title),
+        }
+    }
+
+    /// Produce an ANSI string that changes the title shown
+    /// by the terminal emulator. This is a const function which can only accept
+    /// `&str` or `&[u8]`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use nu_ansi_term::AnsiGenericString;
+    /// let title_string = AnsiGenericString::title("My Title");
+    /// println!("{}", title_string);
+    /// ```
+    /// Should produce an empty line but set the terminal title.
+    pub const fn title(s: &'a S) -> Self {
+        Self {
+            style: Style::new(),
+            content: Content::StrLike(Cow::Borrowed(s)),
+            oscontrol: Some(OSControl::<S>::Title),
+        }
+    }
+
+    /// Produce an ANSI string that changes the title shown
+    /// by the terminal emulator. This is a const function which can only accept
+    /// a [`fmt::Argument`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use nu_ansi_term::AnsiGenericString;
+    /// let title_string = AnsiGenericString::title("My Title");
+    /// println!("{}", title_string);
+    /// ```
+    /// Should produce an empty line but set the terminal title.
+    pub const fn title_fmt_arg(s: fmt::Arguments<'a>) -> Self {
+        Self {
+            style: Style::new(),
+            content: Content::FmtArgs(s),
             oscontrol: Some(OSControl::<S>::Title),
         }
     }
@@ -235,12 +280,12 @@ impl<'a, S: 'a + ToOwned + ?Sized> AnsiGenericString<'a, S> {
     /// ```
     /// use procr_ansi_term::Color::Red;
     ///
-    /// let link_string = Red.paint("a red string").hyperlink("https://www.example.com");
+    /// let link_string = Red.paint("a red string").hyperlink_content(String::from("https://www.example.com"));
     /// println!("{}", link_string);
     /// ```
     /// Should show a red-painted string which, on terminals
     /// that support it, is a clickable hyperlink.
-    pub fn hyperlink<I>(mut self, url: I) -> Self
+    pub fn hyperlink_content<I>(mut self, url: I) -> Self
     where
         I: Into<Content<'a, S>>,
     {
@@ -248,15 +293,40 @@ impl<'a, S: 'a + ToOwned + ?Sized> AnsiGenericString<'a, S> {
         self
     }
 
-    /// Get any URL associated with the string
-    pub fn url_string(&self) -> Option<&Content<'a, S>> {
-        self.oscontrol.as_ref().and_then(|osc| {
-            if let OSControl::Link { url } = osc {
-                Some(url)
-            } else {
-                None
+    /// Cause the styled ANSI string to link to the given URL. This is a const
+    /// fn which can only accept `&str` or `&[u8]`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use nu_ansi_term::Color::Red;
+    ///
+    /// let link_string = Red.paint("a red string").hyperlink("https://www.example.com");
+    /// println!("{}", link_string);
+    /// ```
+    /// Should show a red-painted string which, on terminals
+    /// that support it, is a clickable hyperlink.
+    pub fn hyperlink(self, url: &'a S) -> Self {
+        Self {
+            style: self.style,
+            content: self.content,
+            oscontrol: Some(OSControl::Link {
+                url: Content::StrLike(Cow::Borrowed(url)),
+            }),
+        }
+    }
+
+    /// Get the url content for this string's oscontrol.
+    pub const fn url_string(&self) -> Option<&Content<'a, S>> {
+        if let Some(osc) = &self.oscontrol {
+            match osc {
+                OSControl::Title => {}
+                OSControl::Link { url } => {
+                    return Some(url);
+                }
             }
-        })
+        }
+        None
     }
 }
 
@@ -264,7 +334,7 @@ impl<'a, S: 'a + ToOwned + ?Sized> AnsiGenericString<'a, S> {
 /// written with a minimum of control characters.
 pub struct AnsiGenericStrings<'a, S: 'a + ToOwned + ?Sized> {
     strings: Cow<'a, [AnsiGenericString<'a, S>]>,
-    style_updates: Cow<'a, [StyleUpdate]>,
+    style_updates: RefCell<Cow<'a, [StyleUpdate]>>,
 }
 
 impl<'a, S: 'a + ToOwned + ?Sized> From<AnsiGenericString<'a, S>> for AnsiGenericStrings<'a, S> {
@@ -272,10 +342,10 @@ impl<'a, S: 'a + ToOwned + ?Sized> From<AnsiGenericString<'a, S>> for AnsiGeneri
         let style = value.style;
         Self {
             strings: Cow::Owned(vec![value]),
-            style_updates: Cow::Owned(vec![StyleUpdate {
-                style_delta: StyleDelta::PrefixUsing(style),
+            style_updates: RefCell::new(Cow::Owned(vec![StyleUpdate {
+                style_delta: StyleDelta::ExtraStyles(style),
                 begins_at: 0,
-            }]),
+            }])),
         }
     }
 }
@@ -283,7 +353,7 @@ impl<'a, S: 'a + ToOwned + ?Sized> From<AnsiGenericString<'a, S>> for AnsiGeneri
 impl<'a, S: 'a + ToOwned + ?Sized> Clone for AnsiGenericStrings<'a, S> {
     fn clone(&self) -> Self {
         Self {
-            style_updates: self.style_updates.clone(),
+            style_updates: RefCell::new(self.style_updates.borrow_mut().clone()),
             strings: self.strings.clone(),
         }
     }
@@ -298,23 +368,57 @@ where
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("AnsiGenericStrings")
             .field("strings", &self.strings)
-            .field("style_updates", &self.style_updates)
+            .field("style_updates", &self.style_updates.borrow_mut())
             .finish()
     }
 }
 
 impl<'a, S: 'a + ToOwned + ?Sized> AnsiGenericStrings<'a, S> {
+    pub const fn new(strings: &'a [AnsiGenericString<'a, S>]) -> Self {
+        Self {
+            strings: Cow::Borrowed(strings),
+            style_updates: RefCell::new(Cow::Borrowed(&[])),
+        }
+    }
     /// Create empty sequence with the given capacity.
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             strings: Vec::with_capacity(capacity).into(),
-            style_updates: Vec::with_capacity(capacity).into(),
+            style_updates: RefCell::new(Vec::with_capacity(capacity).into()),
         }
     }
 
     /// Iterate over the underlying generic strings.
     pub fn iter(&self) -> impl Iterator<Item = &'_ AnsiGenericString<'a, S>> {
         self.strings.iter()
+    }
+
+    fn calculate_style_updates(&self) {
+        let mut style_updates = Vec::with_capacity(self.strings.len());
+        for (ix, string) in self.strings.iter().enumerate() {
+            Self::push_style_into(&mut style_updates, string.style, ix);
+        }
+        *self.style_updates.borrow_mut() = Cow::Owned(style_updates);
+    }
+
+    /// Get the style updates required to build this string.
+    ///
+    /// If they are not yet computed, they will be computed, otherwise the cached updates will be returned.
+    fn style_updates(&self) -> Ref<'_, Cow<'_, [StyleUpdate]>> {
+        if self.strings.len() != self.style_updates.borrow().len() {
+            self.calculate_style_updates();
+        }
+        self.style_updates.borrow()
+    }
+
+    /// Get mutable access to the style updates required to build this string.
+    ///
+    /// If they are not yet computed, they will be computed, otherwise the cached updates will be returned.
+    fn style_updates_mut(&self) -> RefMut<'_, Cow<'a, [StyleUpdate]>> {
+        if self.strings.len() != self.style_updates.borrow().len() {
+            self.calculate_style_updates();
+        }
+        self.style_updates.borrow_mut()
     }
 
     /// Update specific generic strings.
@@ -347,9 +451,9 @@ impl<'a, S: 'a + ToOwned + ?Sized> AnsiGenericStrings<'a, S> {
         }
 
         if min_changed_ix < original_len {
+            let unchanged_existing = &self.style_updates()[0..min_changed_ix];
             let mut new_style_updates = Vec::with_capacity(new_strings.len());
-            new_style_updates.extend(&self.style_updates[0..min_changed_ix]);
-            let mut new_style_updates = Cow::Owned(new_style_updates);
+            new_style_updates.extend(unchanged_existing);
 
             for (ix, style) in new_strings[min_changed_ix..]
                 .iter()
@@ -361,7 +465,7 @@ impl<'a, S: 'a + ToOwned + ?Sized> AnsiGenericStrings<'a, S> {
 
             Self {
                 strings: Cow::Owned(new_strings),
-                style_updates: new_style_updates,
+                style_updates: RefCell::new(Cow::Owned(new_style_updates)),
             }
         } else {
             Self::from_iter(new_strings)
@@ -370,11 +474,11 @@ impl<'a, S: 'a + ToOwned + ?Sized> AnsiGenericStrings<'a, S> {
 
     /// Rebase a nested string onto a parent's style. This is effectively an
     /// "OR" operation.
-    pub fn rebase_on(mut self, base: Style) -> Self {
-        for update in self.style_updates.to_mut() {
+    pub fn rebase_on(self, base: Style) -> Self {
+        for update in self.style_updates_mut().to_mut().iter_mut() {
             update.style_delta = match update.style_delta {
-                StyleDelta::PrefixUsing(style) => {
-                    StyleDelta::PrefixUsing(if style.prefix_with_reset {
+                StyleDelta::ExtraStyles(style) => {
+                    StyleDelta::ExtraStyles(if style.prefix_before_reset {
                         style.rebase_on(base)
                     } else {
                         style
@@ -390,12 +494,12 @@ impl<'a, S: 'a + ToOwned + ?Sized> AnsiGenericStrings<'a, S> {
     #[inline]
     pub fn push(&mut self, s: AnsiGenericString<'a, S>) {
         self.strings.to_mut().push(s.clone());
-        self.push_style(*s.style(), self.strings.len() - 1);
+        self.push_style(*s.style_ref(), self.strings.len() - 1);
     }
 
     #[inline]
     fn push_style_into(
-        existing_style_updates: &mut Cow<'a, [StyleUpdate]>,
+        existing_style_updates: &mut Vec<StyleUpdate>,
         next: Style,
         begins_at: usize,
     ) {
@@ -406,22 +510,22 @@ impl<'a, S: 'a + ToOwned + ?Sized> AnsiGenericStrings<'a, S> {
             .style_delta
             .delta_next(next);
 
-        existing_style_updates.to_mut().push(StyleUpdate {
+        existing_style_updates.push(StyleUpdate {
             begins_at,
             style_delta: command,
         });
     }
 
     #[inline]
-    fn push_style(&mut self, next: Style, begins_at: usize) {
-        Self::push_style_into(&mut self.style_updates, next, begins_at)
+    fn push_style(&self, next: Style, begins_at: usize) {
+        Self::push_style_into(self.style_updates.borrow_mut().to_mut(), next, begins_at)
     }
 
     fn write_iter(&self) -> WriteIter<'_, 'a, S> {
         WriteIter {
             style_iter: StyleIter {
                 cursor: 0,
-                instructions: &self.style_updates,
+                instructions: self.style_updates.borrow(),
                 next_update: None,
                 current: None,
             },
@@ -436,7 +540,7 @@ impl<'a, S: 'a + ToOwned + ?Sized> AnsiGenericStrings<'a, S> {
 /// Iterator over the minimal styles (see [`StyleDelta`]) of an [`AnsiGenericStrings`] sequence.
 pub struct StyleIter<'b> {
     cursor: usize,
-    instructions: &'b [StyleUpdate],
+    instructions: Ref<'b, Cow<'b, [StyleUpdate]>>,
     next_update: Option<StyleUpdate>,
     current: Option<StyleUpdate>,
 }
@@ -558,13 +662,13 @@ pub fn AnsiByteStrings<'a>(
 
 // ---- paint functions ----
 impl Style {
-    /// Paints the given text with this style, returning an ANSI string.
+    /// Paints the given content with this style, returning an ANSI string.
     ///
     /// ```
     /// use procr_ansi_term::Style;
     /// use procr_ansi_term::Color;
     ///
-    /// println!("{}", Style::new().foreground(Color::Blue).paint("nice!"));
+    /// println!("{}", Style::new().fg(Color::Blue).paint("nice!"));
     /// ```
     #[inline]
     #[must_use]
@@ -575,10 +679,6 @@ impl Style {
         AnsiGenericString {
             content: match input.into() {
                 x @ Content::GenericStrings(_) => x.with_context(self),
-                Content::GenericFmtArg(mut x) => {
-                    x.rebase_on(self);
-                    Content::GenericFmtArg(x)
-                }
                 x => x,
             },
             style: self,
@@ -589,7 +689,7 @@ impl Style {
 
 impl Color {
     /// Paints the given text with this color, returning an ANSI string.
-    /// This is a short-cut so you don’t have to use `Blue.foreground()` just
+    /// This is a short-cut so you don’t have to use `Blue.normal()` just
     /// to get blue text.
     ///
     /// ```
@@ -602,7 +702,7 @@ impl Color {
     where
         I: Into<Content<'a, S>>,
     {
-        self.as_foreground().paint(input)
+        self.normal().paint(input)
     }
 }
 
@@ -642,16 +742,16 @@ impl<'a, S: 'a + ToOwned + ?Sized> AnsiGenericString<'a, S> {
     {
         match oscontrol {
             Some(OSControl::Link { url: u, .. }) => {
-                write_any_str!(w, "\x1B]8;;")?;
+                write_str!(w, "\x1B]8;;")?;
                 u.write_to(w)?;
-                write_any_str!(w, "\x1B\x5C")?;
+                write_str!(w, "\x1B\x5C")?;
                 content.write_to(w)?;
-                write_any_str!(w, "\x1B]8;;\x1B\x5C")
+                write_str!(w, "\x1B]8;;\x1B\x5C")
             }
             Some(OSControl::Title) => {
-                write_any_str!(w, "\x1B]2;")?;
+                write_str!(w, "\x1B]2;")?;
                 content.write_to(w)?;
-                write_any_str!(w, "\x1B\x5C")
+                write_str!(w, "\x1B\x5C")
             }
             None => content.write_to(w),
         }
@@ -663,9 +763,9 @@ impl<'a, S: 'a + ToOwned + ?Sized> AnsiGenericString<'a, S> {
         S: StrLike<'a, W>,
         str: StrLike<'a, W>,
     {
-        write_any_fmt!(w, "{}", self.style.prefix())?;
+        write_fmt!(w, "{}", self.style.prefix())?;
         Self::write_inner(&self.content, &self.oscontrol, w)?;
-        write_any_fmt!(w, "{}", self.style.suffix())
+        write_fmt!(w, "{}", self.style.suffix())
     }
 }
 
@@ -697,7 +797,7 @@ impl<'a, S: 'a + ToOwned + ?Sized> AnsiGenericStrings<'a, S> {
 
         for (style_command, content, oscontrol) in self.write_iter() {
             match style_command {
-                StyleDelta::PrefixUsing(style) => {
+                StyleDelta::ExtraStyles(style) => {
                     style.write_prefix(w)?;
                     last_is_plain = style.has_no_styling();
                 }
@@ -710,50 +810,8 @@ impl<'a, S: 'a + ToOwned + ?Sized> AnsiGenericStrings<'a, S> {
             dbg!(last_is_plain);
             Ok(())
         } else {
-            w.write_any_str(RESET.as_ref())
+            w.write_str(RESET.as_ref())
         }
-    }
-}
-
-// ---- fmt::Arguments like generic ----
-
-/// Output of the [`ansi_format`] macro. It is not meant for external use, but
-/// must be exposed regardless.
-///
-/// TODO: might be better to just produce an `AnsiGenericStrings` as the output
-/// of [`ansi_format`], rather than a trait object.
-pub trait FmtRenderer<'a, S: 'a + ToOwned + ?Sized>
-where
-    Self: 'a + fmt::Debug,
-{
-    /// Get a reference to the ANSI generic strings used to render the output string.
-    fn render_inputs_ref(&self) -> &[AnsiGenericString<'a, S>];
-    /// Get a mutable reference to the ANSI generic strings used to render the
-    /// output string.
-    fn render_inputs_mut(&mut self) -> &mut [AnsiGenericString<'a, S>];
-    /// Produce the output string.
-    ///
-    /// TODO: string caching. Possibly even skipping production of the String
-    /// and instead passing around the raw `[fmt::Arguments]` instance, if
-    /// lifteimes can be figured out.
-    fn render(&self) -> String;
-    /// Clone this renderer.
-    fn clone_renderer(&self) -> Box<dyn FmtRenderer<'a, S>>;
-    /// Rebase the styles of the component ANSI generic strings of this renderer
-    /// on the given `base`.
-    fn rebase_on(&mut self, base: Style) {
-        for string in self.render_inputs_mut() {
-            *string = string.clone().rebase_on(base);
-        }
-    }
-}
-
-impl<'a, S: 'a + ToOwned + ?Sized> fmt::Display for dyn FmtRenderer<'a, S>
-where
-    Self: fmt::Debug,
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.render())
     }
 }
 
@@ -888,7 +946,7 @@ mod tests {
     fn hyperlink() {
         let styled = Red
             .paint("Link to example.com.")
-            .hyperlink("https://example.com");
+            .hyperlink_content("https://example.com");
         assert_eq!(
             styled.to_string(),
             "\x1B[31m\x1B]8;;https://example.com\x1B\\Link to example.com.\x1B]8;;\x1B\\\x1B[0m"
@@ -900,7 +958,7 @@ mod tests {
         let link = Blue
             .underline()
             .paint("Link to example.com.")
-            .hyperlink("https://example.com");
+            .hyperlink_content("https://example.com");
         dbg!("link: {:?}", &link);
         // Assemble with link by itself
         let joined = AnsiStrings([link.clone()]).to_string();
@@ -915,7 +973,7 @@ mod tests {
         let link = Blue
             .underline()
             .paint("Link to example.com.")
-            .hyperlink("https://example.com");
+            .hyperlink_content("https://example.com");
         dbg!("link: {:?}", &link);
         let after = Green.paint(" After link.");
         // Assemble with link first
@@ -932,7 +990,7 @@ mod tests {
         let link = Blue
             .underline()
             .paint("Link to example.com.")
-            .hyperlink("https://example.com");
+            .hyperlink_content("https://example.com");
         dbg!("link: {:?}", &link);
         // Assemble with link at the end
         let joined = AnsiStrings([before.clone(), link.clone()]).to_string();
@@ -948,7 +1006,7 @@ mod tests {
         let link = Blue
             .underline()
             .paint("Link to example.com.")
-            .hyperlink("https://example.com");
+            .hyperlink_content("https://example.com");
         dbg!("link: {:?}", &link);
         let after = Green.paint(" After link.");
         dbg!("link: {:?}", &link);

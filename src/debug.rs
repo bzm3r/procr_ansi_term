@@ -96,7 +96,7 @@ fn debug_style_to_string(
 ///     use procr_ansi_term::Color::{Red, Blue};
 ///     assert_eq!(
 ///         "Style { bold, italic, foreground(Red), background(Blue) }",
-///        format!("{:#?}", Red.on_background(Blue).bold().italic())
+///        format!("{:#?}", Red.on(Blue).bold().italic())
 ///     );
 /// ```
 impl Debug for Style {
@@ -110,11 +110,7 @@ impl Debug for Style {
             write!(
                 f,
                 "{}",
-                debug_style_to_string(
-                    self.formats,
-                    self.coloring.foreground,
-                    self.coloring.background
-                )?
+                debug_style_to_string(self.formats, self.coloring.fg, self.coloring.bg)?
             )
         }
     }
@@ -124,11 +120,11 @@ impl Debug for Coloring {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if !f.alternate() {
             f.debug_struct("Coloring")
-                .field("foreground", &self.foreground)
-                .field("background", &self.background)
+                .field("foreground", &self.fg)
+                .field("background", &self.bg)
                 .finish()
         } else {
-            debug_write_coloring_to(f, self.foreground, self.background, false)?;
+            debug_write_coloring_to(f, self.fg, self.bg, false)?;
             Ok(())
         }
     }
@@ -143,9 +139,9 @@ impl Debug for Coloring {
 /// ```
 ///     use procr_ansi_term::Color::{Red, Blue};
 ///     assert_eq!("bold, italic",
-///                format!("{:#?}", Red.on_background(Blue).bold().italic().formats));
+///                format!("{:#?}", Red.on(Blue).bold().italic().formats));
 ///     assert_eq!("foreground(Red), background(Blue)",
-///                format!("{:#?}", Red.on_background(Blue).bold().italic().coloring));
+///                format!("{:#?}", Red.on(Blue).bold().italic().coloring));
 /// ```
 impl Debug for FormatFlags {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -283,7 +279,7 @@ pub struct FgColor(Color);
 
 impl DebugStylePaint for FgColor {
     fn into_style(self) -> Style {
-        self.0.as_foreground()
+        self.0.normal()
     }
 }
 
@@ -292,20 +288,20 @@ pub struct BgColor(Color);
 
 impl DebugStylePaint for BgColor {
     fn into_style(self) -> Style {
-        self.0.as_background()
+        self.0.bg()
     }
 }
 
 impl DebugStylePaint for Color {
     fn into_style(self) -> Style {
-        self.as_foreground()
+        self.normal()
     }
 }
 
 impl DebugStylePaint for Infix {
     fn into_style(self) -> Style {
         match self.0.compute_delta(self.1) {
-            StyleDelta::PrefixUsing(style) => style,
+            StyleDelta::ExtraStyles(style) => style,
             StyleDelta::Empty => Style::new(),
         }
     }
@@ -372,8 +368,8 @@ impl DebugDiff for Coloring {
     fn debug_diff(&self, expected: &Self) -> String {
         format!(
             "Coloring {{\n\tforeground: {},\n\tbackground: {},\n}}",
-            self.foreground.debug_diff(&expected.foreground),
-            expected.background.debug_diff(&expected.background)
+            self.fg.debug_diff(&expected.fg),
+            expected.bg.debug_diff(&expected.bg)
         )
     }
 }
@@ -394,13 +390,13 @@ impl DebugDiff for StyleDelta {
             format!("{self:#?} (no diff)")
         } else {
             match (self, expected) {
-                (StyleDelta::PrefixUsing(o), StyleDelta::PrefixUsing(e)) => {
+                (StyleDelta::ExtraStyles(o), StyleDelta::ExtraStyles(e)) => {
                     format!("StyleDelta::PrefixUsing({})", o.debug_diff(e))
                 }
-                (StyleDelta::PrefixUsing(o), StyleDelta::Empty) => {
+                (StyleDelta::ExtraStyles(o), StyleDelta::Empty) => {
                     format!("StyleDelta::PrefixUsing({o:#?} != {expected:#?})")
                 }
-                (StyleDelta::Empty, StyleDelta::PrefixUsing(e)) => {
+                (StyleDelta::Empty, StyleDelta::ExtraStyles(e)) => {
                     format!("StyleDelta::PrefixUsing({self:#?} != {e:#?})")
                 }
                 _ => unreachable!(),
@@ -451,8 +447,8 @@ mod test {
         [bold: bold]
         [italic: italic]
         [both: bold, italic]
-        [red: Red.as_foreground(), "Style { foreground(Red) }"]
-        [redblue: Red.on_background(Rgb(3, 2, 4)), "Style { foreground(Red), background(Rgb(3, 2, 4)) }"]
-        [everything: Red.on_background(Blue).blink().bold().dimmed().hidden().italic().reverse().strikethrough().underline(), "Style { blink, bold, dimmed, hidden, italic, reverse, strikethrough, underline, foreground(Red), background(Blue) }"]
+        [red: Red.normal(), "Style { foreground(Red) }"]
+        [redblue: Red.on(Rgb(3, 2, 4)), "Style { foreground(Red), background(Rgb(3, 2, 4)) }"]
+        [everything: Red.on(Blue).blink().bold().dimmed().hidden().italic().reverse().strikethrough().underline(), "Style { blink, bold, dimmed, hidden, italic, reverse, strikethrough, underline, foreground(Red), background(Blue) }"]
     );
 }
